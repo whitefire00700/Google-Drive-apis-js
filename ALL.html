@@ -1,0 +1,177 @@
+<html>
+  <head>
+      <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+<script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+    <script type="text/javascript">
+         var CLIENT_ID = '712807154771-ev1n2o0l2u8c6ocp97uqc6ikgdnflp6k.apps.googleusercontent.com';
+
+      var SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly','https://www.googleapis.com/auth/drive','https://www.googleapis.com/auth/drive.file','https://www.googleapis.com/auth/drive.metadata'];
+
+      /**
+       * Check if current user has authorized this application.
+       */
+      function checkAuth() {
+        gapi.auth.authorize(
+          {
+            'client_id': CLIENT_ID,
+            'scope': SCOPES.join(' '),
+            'immediate': true
+          }, handleAuthResult);
+      }
+
+      /**
+       * Handle response from authorization server.
+       *
+       * @param {Object} authResult Authorization result.
+       */
+      function handleAuthResult(authResult) {
+        var authorizeDiv = document.getElementById('authorize-div');
+        if (authResult && !authResult.error) {
+          // Hide auth UI, then load client library.
+          authorizeDiv.style.display = 'none';
+          loadDriveApi();
+        } else {
+          // Show auth UI, allowing the user to initiate authorization by
+          // clicking authorize button.
+          authorizeDiv.style.display = 'inline';
+        }
+      }
+
+      /**
+       * Initiate auth flow in response to user clicking authorize button.
+       *
+       * @param {Event} event Button click event.
+       */
+      function handleAuthClick(event) {
+        gapi.auth.authorize(
+          {client_id: CLIENT_ID, scope: SCOPES, immediate: false},
+          handleAuthResult);
+        return false;
+      }
+
+      /**
+       * Load Drive API client library.
+       */
+      function loadDriveApi() {
+        gapi.client.load('drive', 'v2', listFiles);
+      }
+        
+    function listFiles() {
+        var request = gapi.client.drive.files.list({
+            'maxResults': 500
+          });
+
+          request.execute(function(resp) {
+            appendPre('Files:');
+            var files = resp.items;
+            if (files && files.length > 0) {
+              for (var i = 0; i < files.length; i++) {
+                var file = files[i];
+                appendPre(file.title + ' (' + file.id + ')');
+              }
+            } else {
+              appendPre('No files found.');
+            }
+          });
+      }
+
+      /**
+       * Append a pre element to the body containing the given message
+       * as its text node.
+       *
+       * @param {string} message Text to be placed in pre element.
+       */
+      function appendPre(message) {
+        var pre = document.getElementById('output');
+        var textContent = document.createTextNode(message + '\n');
+        pre.appendChild(textContent);
+      }
+            
+        
+function createFolder(folderName) {
+  var body = {
+    'title': folderName,
+    'mimeType': "application/vnd.google-apps.folder"
+  };
+
+  var request = gapi.client.drive.files.insert({
+    'resource': body
+  });
+
+  request.execute(function(resp) {
+    console.log('Folder ID: ' + resp.id);
+  });
+} 
+function printFile(fileId) {
+    var theID = 0B9YXBZ8dai49ZTdrejB5SGNGMEk;
+    var request = gapi.client.request({
+        'path': '/drive/v2/files/'+theID,
+            'method': 'GET',
+        });
+      request.execute(function(resp) {
+        console.log('Title: ' + resp.title);
+        console.log('Description: ' + resp.description);
+        console.log('MIME type: ' + resp.mimeType);
+        console.log('WebContent: ' + resp.webContentLink);
+             });
+    }
+        
+    function insertFile() {
+
+    gapi.client.load('drive', 'v2', function() {
+
+       var request = gapi.client.request({
+        'path': '/drive/v2/files',
+        'method': 'POST',
+        'body':{
+            "title" : "cat.jpg",
+            "mimeType" : "image/jpeg",
+            "description" : "Some"
+         }
+     });
+
+      request.execute(function(resp) { console.log(resp); });
+   });
+}   
+   
+        
+function downloadFile(file, callback) {
+  if (file.downloadUrl) {
+    var accessToken = gapi.auth.getToken().access_token;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', file.downloadUrl);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + accessToken);
+    xhr.onload = function() {
+      callback(xhr.responseText);
+    };
+    xhr.onerror = function() {
+      callback(null);
+    };
+    xhr.send();
+  } else {
+    callback(null);
+  }
+}        
+</script>
+      <script src="https://apis.google.com/js/client.js?onload=checkAuth"> </script>      
+</head>
+    <body>
+    
+    <input id="clickme" type="button" value="create folder" onclick="createFolder();" />
+    <input id="clickme" type="button" value="print Metadata" onclick="printFile();" />  
+     <input id="clickme" type="button" value="Insert File" onclick="insertFile();" /> 
+         <input id="clickme" type="button" value="download File" onclick="downloadFile(file,callback);" /> 
+        
+    
+    <div id="authorize-div" style="display: none">
+      <span>Authorize access to Drive API</span>
+      <!--Button for the user to click to initiate auth sequence -->
+      <button id="authorize-button" onclick="handleAuthClick(event)">
+        Authorize
+      </button>
+    </div>
+    <pre id="output"></pre>
+  </body>    
+    
+    
+</html>
